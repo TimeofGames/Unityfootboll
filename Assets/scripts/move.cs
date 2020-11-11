@@ -1,13 +1,13 @@
 ﻿using UnityEngine;
-
+using System;
 //эти строчки гарантирют что наш скрипт не завалится если на плеере будет отсутствовать нужные компоненты
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(BoxCollider))]
 public class move : MonoBehaviour
 {
     public float Speed = 0.3f;
-    public float JumpForce = 1f;
-
+    public GameObject GameObjectCamera;
+    private Camera _camera;
     //даем возможность выбрать тэг пола.
     //так же убедитесь что ваш Player сам не относится к даному слою. 
 
@@ -15,43 +15,46 @@ public class move : MonoBehaviour
     public LayerMask GroundLayer = 1; // 1 == "Default"
 
     private Rigidbody _rb;
-    private BoxCollider _collider; // теперь прийдется использовать CapsuleCollider
-    //и удалите бокс коллайдер если он есть
-
-    private bool _isGrounded
-    {
-        get {
-            var bottomCenterPoint = new Vector3(_collider.bounds.center.x, _collider.bounds.min.y, _collider.bounds.center.z);
-
-            //создаем невидимую физическую капсулу и проверяем не пересекает ли она обьект который относится к полу
-
-            //_collider.bounds.size.x / 2 * 0.9f -- эта странная конструкция берет радиус обьекта.
-            // был бы обязательно сферой -- брался бы радиус напрямую, а так пишем по-универсальнее
-
-            return Physics.CheckCapsule(_collider.bounds.center, bottomCenterPoint, _collider.bounds.size.x / 2 , GroundLayer);
-            // если можно будет прыгать в воздухе, то нужно будет изменить коэфициент 0.9 на меньший.
-        }
-    }
+    private Transform _transform;
 
     private Vector3 _movementVector
     {
         get
         {
-            var horizontal = Input.GetAxis("Horizontal");
-            var vertical = Input.GetAxis("Vertical");
+            if (Input.GetKey(KeyCode.W))
+            {
+                return _transform.right;
+            }
 
-            return new Vector3(horizontal, 0.0f, vertical);
+            if (Input.GetKey(KeyCode.S))
+            {
+                return -_transform.right;
+            }
+
+            if (Input.GetKey(KeyCode.A))
+            {
+                return _transform.forward;
+            }
+
+            if (Input.GetKey(KeyCode.D))
+            {
+                return -_transform.forward;
+            }
+
+            return Vector3.zero;
         }
     }
 
+
     void Start()
     {
+        _camera = GameObjectCamera.GetComponent<Camera>();
         _rb = GetComponent<Rigidbody>();
-        _collider = GetComponent<BoxCollider>();
+        _transform = GetComponent<Transform>();
 
         //т.к. нам не нужно что бы персонаж мог падать сам по-себе без нашего на то указания.
         //то нужно заблочить поворот по осях X и Z
-        _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
+        _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
         //  Защита от дурака
         if (GroundLayer == gameObject.layer)
@@ -60,9 +63,10 @@ public class move : MonoBehaviour
 
     void FixedUpdate()
     {
-        JumpLogic();
         MoveLogic();
+        RotateLogic();
     }
+
 
     private void MoveLogic()
     {
@@ -70,12 +74,21 @@ public class move : MonoBehaviour
         // мы убрали и множитель Time.fixedDeltaTime
         _rb.AddForce(_movementVector * Speed, ForceMode.Impulse);
     }
+    
 
-    private void JumpLogic()
+    private void RotateLogic()
     {
-        if (_isGrounded && (Input.GetAxis("Jump") > 0))
+        if (Input.GetMouseButton(0))
         {
-            _rb.AddForce(Vector3.up * JumpForce, ForceMode.Impulse);
+            Ray ray = _camera.ScreenPointToRay (Input.mousePosition);
+            RaycastHit hit = new RaycastHit();
+            if (Physics.Raycast (ray, out hit))
+            {
+                Vector3 rot = transform.eulerAngles;
+                transform.LookAt(hit.point);
+                transform.eulerAngles = new Vector3(rot.x, transform.eulerAngles.y-90, rot.z);
+            }
         }
     }
+
 }
