@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using System;
-//эти строчки гарантирют что наш скрипт не завалится если на плеере будет отсутствовать нужные компоненты
+
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(BoxCollider))]
 public class move : MonoBehaviour
@@ -8,11 +8,8 @@ public class move : MonoBehaviour
     public float Speed = 0.3f;
     public GameObject GameObjectCamera;
     private Camera _camera;
-    //даем возможность выбрать тэг пола.
-    //так же убедитесь что ваш Player сам не относится к даному слою. 
-
-    //!!!!Нацепите на него нестандартный Layer, например Player!!!!
-    public LayerMask GroundLayer = 1; // 1 == "Default"
+  
+    public LayerMask GroundLayer = 1; 
 
     private Rigidbody _rb;
     private Transform _transform;
@@ -52,11 +49,8 @@ public class move : MonoBehaviour
         _rb = GetComponent<Rigidbody>();
         _transform = GetComponent<Transform>();
 
-        //т.к. нам не нужно что бы персонаж мог падать сам по-себе без нашего на то указания.
-        //то нужно заблочить поворот по осях X и Z
         _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-
-        //  Защита от дурака
+        
         if (GroundLayer == gameObject.layer)
             Debug.LogError("Player SortingLayer must be different from Ground SourtingLayer!");
     }
@@ -70,8 +64,7 @@ public class move : MonoBehaviour
 
     private void MoveLogic()
     {
-        // т.к. мы сейчас решили использовать физическое движение снова,
-        // мы убрали и множитель Time.fixedDeltaTime
+
         _rb.AddForce(_movementVector * Speed, ForceMode.Impulse);
     }
     
